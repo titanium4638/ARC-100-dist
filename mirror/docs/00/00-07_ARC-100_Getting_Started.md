@@ -99,9 +99,16 @@ ARC-100 keeps **two indexes**, and the distinction matters from day one
 parent folder; the script creates the named instance folder under it):
 
 ```bash
-git clone --depth 1 https://github.com/arc-100-standard/ARC-100-dist.git "${TMPDIR:-/tmp}/ARC-100-dist"
-bash "${TMPDIR:-/tmp}/ARC-100-dist/RUN_FIRST.sh" ACME
+CLONE="$(mktemp -d)"
+git clone --depth 1 https://github.com/arc-100-standard/ARC-100-dist.git "$CLONE"
+bash "$CLONE/RUN_FIRST.sh" ACME
+rm -rf "$CLONE"
 ```
+
+`mktemp -d` makes a fresh throwaway directory and the trailing `rm -rf`
+discards the clone once it has run — so the block is safe to re-run (it never
+trips over a leftover) and leaves nothing behind. The clone is only a
+delivery vehicle; nothing of yours lives in it.
 
 `RUN_FIRST.sh` is **name-first onboarding**: the one input it needs is your
 system's name — passed as the single argument, or prompted for
@@ -468,3 +475,4 @@ at your own pace — not part of standing the instance up.
 | 2026-06-15 | Revision 7: removed the "forthcoming P5" framing (author direction — the v2 campaign closes at four phases; there is no P5). §00-07.5 no longer promises a discovery-and-migration toolkit as future-phase work — migration is simply the manual librarian loop (§00-07.6), done incrementally; §00-07.11 reframes green-content migration as the dogfood *activity* performed by hand with the working installer, not a future phase. Prose-only; no section renumbered. Pairs with the `RUN_FIRST.sh` fail-fast + rollback hardening (so running it outside a payload errors cleanly instead of half-building) and the mirror republish that makes §00-07.2's clone-and-run flow live. |
 | 2026-06-15 | Revision 8: added a "Preview your site" block to §00-07.3 (dogfood finding — the chapter described install + sync but never said how to actually *run* the site). Documents `mkdocs serve -f <NAME>-100/mkdocs.yml --livereload --dev-addr localhost:<PORT> -o` (and `mkdocs build -f …`), run from the folder's parent — `-o` opens the browser on serve, and `RUN_FIRST.sh` now prints this exact command on completion with the name and a scanned free port pre-filled. Explains the home is the generated index (no hand-maintained sidebar, so the "not included in nav" notes are expected) and that `--strict` is a CI gate (a fresh instance is strict-clean apart from the inherited Book 00 `project=arc-100` LikeC4 views). Prose-only; no section renumbered. (Pairs with `RUN_FIRST.sh` now filling the Book 01 placeholder title "`<NAME> System`" → "`<NAME>-100 System`", refresh-safe since Book 01 syncs slot identity only.) |
 | 2026-06-15 | Revision 9: repointed the §00-07.2 clone command to the **`arc-100-standard/ARC-100-dist`** mirror (the dist repo was transferred into a new GitHub org for a project-neutral owner; the old URL redirects, but the canonical command should name the new owner). URL only; no section renumbered. |
+| 2026-06-16 | Revision 10: made the §00-07.2 clone idempotent + self-cleaning. The throwaway clone now goes into a fresh `mktemp -d` directory and is `rm -rf`'d after, instead of the fixed `${TMPDIR:-/tmp}/ARC-100-dist` path. The fixed path collided on re-run (`destination path … already exists and is not an empty directory`), which silently broke the re-clone-to-re-sync flow; the ephemeral dir is unique per run, auto-discarded, and never clutters the adopter's tree. Added a one-line note explaining the `mktemp`/`rm -rf` pattern. Command + note only; no section renumbered. |

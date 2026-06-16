@@ -5,13 +5,15 @@ PRs here.** This repository is the artifacts-only distribution channel for
 the ARC-100 documentation standard. The current release is always HEAD of
 `main`; `vN` tags are immutable bookmarks.
 
-Current release: **v1** (canonical source SHA `b59ebd91a089aa37cda52d6f20c3d016d97863a6`)
+Current release: **v1** (canonical source SHA `e19a88b9b3533add562fce56cd62beffa267794a`)
 
 ## Quickstart
 
 ```sh
-git clone --depth 1 https://github.com/arc-100-standard/ARC-100-dist.git "${TMPDIR:-/tmp}/ARC-100-dist"
-cd /path/to/your-project && python3 "${TMPDIR:-/tmp}/ARC-100-dist/tools/arc_sync.py" --target .
+CLONE="$(mktemp -d)"
+git clone --depth 1 https://github.com/arc-100-standard/ARC-100-dist.git "$CLONE"
+cd /path/to/your-project && python3 "$CLONE/tools/arc_sync.py" --target .
+rm -rf "$CLONE"
 ```
 
 The target project must carry an `ARC-100-SYNC.config.yml` whose
