@@ -65,7 +65,7 @@ code listing; agents extract it by the marker pair.
 <!-- ARC-100-INDEX-START -->
 
 ```yaml
-arc_100_version: "100.1"
+arc_100_version: "100.2"
 active_version: null
 
 bands:
@@ -80,7 +80,7 @@ bands:
   - range: "20-39"
     title: "Client"
     description: "Client-side / frontend / user-facing surface. Foundations, server communication, UI, rendering, browser-side concerns. Optional — not every system has a client."
-    unallocated_book_slots: 18
+    unallocated_book_slots: 17
   - range: "40-59"
     title: "Server"
     description: "Server-side / backend / engine. Transport, Application Programming Interface (API) contract, handlers, identity, runtime, audit. Optional — not every system has a server."
@@ -457,6 +457,119 @@ books:
         title: "Optimistic Updates"
         status: "placeholder"
         description: "Optimistic-update discipline: predicted-state shape, rollback on server rejection, conflict detection when a concurrent change lands. (optional)"
+
+  - id: "22"
+    arc_100: true
+    arc_100_ulid: 01KVRHKAJEFQSHPCDY8PRGKN0Y
+    title: "Design"
+    band: "20-39"
+    description: "The application's design system: design intent and guidance for the application as a whole, detailed design intent for individual design topics, and the implementation architecture that realizes those design decisions in code — organized in three tiers (Foundations, Elements, Implementation). Optional — applications with a user interface."
+    chapters:
+      - id: "22-01"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAKCWKEXPVH0TK8GP6M2
+        title: "Design Language"
+        status: "placeholder"
+        description: "The unifying design language — the objectives, principles, and coherence rules that govern every other Design chapter."
+        keywords: ["design-language", "design-philosophy", "tenets", "principles", "north-star", "foundation", "tier-1", "coherence", "accessibility-reference"]
+      - id: "22-02"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAMBCTDQNSWVA8J70ZNY
+        title: "Brand"
+        status: "placeholder"
+        description: "Brand identity and personality expressed through design, carried consistently across every surface. Distinct from 02 Project Identity (mission, audience, value)."
+        keywords: ["brand", "brand-identity", "personality", "positioning", "voice-and-character", "foundation", "tier-1", "logo", "wordmark"]
+      - id: "22-03"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAN88ENYTVKM498H0Y3A
+        title: "Reserved (Tier-1 Foundation Headroom)"
+        status: "placeholder"
+        description: "Reserved. Held for a future cross-cutting design foundation that governs other chapters — not a bounded design facet."
+        keywords: ["reserved", "headroom", "tier-1", "foundation", "cross-cutting", "unallocated", "do-not-assign-facet"]
+      - id: "22-04"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAP6MESXM8B94YGTGE3K
+        title: "Reserved (Tier-1 Foundation Headroom)"
+        status: "placeholder"
+        description: "Reserved (second slot). Held for a future cross-cutting design foundation that governs other chapters — not a bounded design facet."
+        keywords: ["reserved", "headroom", "tier-1", "foundation", "cross-cutting", "unallocated", "do-not-assign-facet"]
+      - id: "22-05"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAQ5P2MJMVF1QJXAFSPP
+        title: "Typography"
+        status: "placeholder"
+        description: "Type families, scale, hierarchy, weight, measure, and the design objectives type serves. The visual half of language; cf. 22-06 Voice."
+        keywords: ["typography", "type-system", "type-scale", "hierarchy", "leading", "measure", "legibility", "tier-2", "element"]
+      - id: "22-06"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAR2HP3Y27FJTR1Z55FF
+        title: "Voice"
+        status: "placeholder"
+        description: "Tone of voice, terminology, and the application's microcopy approach. The verbal half of language; cf. 22-05 Typography."
+        keywords: ["voice", "tone", "microcopy", "terminology", "ux-writing", "content-design", "tier-2", "element"]
+      - id: "22-07"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAS1XFFV92MJXD6DJ4EK
+        title: "Color"
+        status: "placeholder"
+        description: "Palette, semantic color roles, usage, and light/dark variants. Contrast goals reference 20-07 Accessibility."
+        keywords: ["color", "palette", "semantic-color", "color-roles", "theme-variants", "contrast", "tier-2", "element"]
+      - id: "22-08"
+        arc_100: true
+        arc_100_ulid: 01KVRHKASZ85HY9NFP2PWA5MFY
+        title: "Iconography"
+        status: "placeholder"
+        description: "The icon system — metaphors, family, style, and sizing conventions. Distinct from 22-21 Vectors, the SVG that renders icons."
+        keywords: ["iconography", "icons", "icon-system", "visual-metaphor", "icon-grid", "icon-style", "tier-2", "element"]
+      - id: "22-09"
+        arc_100: true
+        arc_100_ulid: 01KVRHKATYAFDHR6SPJ0PQF839
+        title: "Imagery"
+        status: "placeholder"
+        description: "Photography, illustration, and art-direction style and intent. Distinct from 22-22 Assets (production and delivery of files)."
+        keywords: ["imagery", "photography", "illustration", "art-direction", "image-style", "tier-2", "element"]
+      - id: "22-10"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAVXP65YV8475GGJXGB3
+        title: "Layout"
+        status: "placeholder"
+        description: "Composition, grid, spacing and density scales, alignment, and responsive layout intent."
+        keywords: ["layout", "composition", "grid", "spacing", "density", "alignment", "responsive-intent", "tier-2", "element"]
+      - id: "22-11"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAWVV08MAC86JQ48WP7P
+        title: "Motion"
+        status: "placeholder"
+        description: "Animation and transition principles — choreography, easing, duration, and the intent of motion, including reduced-motion."
+        keywords: ["motion", "animation", "transitions", "choreography", "easing", "duration", "reduced-motion", "tier-2", "element"]
+      - id: "22-12"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAXSEADB7GER623N27RT
+        title: "Interactivity"
+        status: "placeholder"
+        description: "The intent of interactions — affordances, feedback, states, and gestures. Design intent, distinct from the client handlers in Book 20."
+        keywords: ["interactivity", "interaction-design", "affordances", "feedback", "states", "gestures", "tier-2", "element"]
+      - id: "22-20"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAYQ49888F8GXVJEMHE2
+        title: "Style"
+        status: "placeholder"
+        description: "The CSS architecture implementing the design: tokens, themes, file/module organization, state styling, and responsive rules. Distinct from 20-03 Build Pipeline."
+        keywords: ["style", "css", "design-tokens", "themes", "css-architecture", "responsive-design", "breakpoints", "tier-3", "implementation"]
+      - id: "22-21"
+        arc_100: true
+        arc_100_ulid: 01KVRHKAZNQGGJKH8S864P35XG
+        title: "Vectors"
+        status: "placeholder"
+        description: "SVG and vector architecture — SVG-over-raster intent, inline vs sprite strategy, authoring, optimization, and rendering."
+        keywords: ["vectors", "svg", "sprites", "inline-svg", "vector-optimization", "svg-over-raster", "tier-3", "implementation"]
+      - id: "22-22"
+        arc_100: true
+        arc_100_ulid: 01KVRHKB0J8Z42T79H2GNMG7K9
+        title: "Assets"
+        status: "placeholder"
+        description: "Production, formats, optimization, and delivery of non-vector design assets — images, fonts, logos, media. Distinct from 20-03 Build Pipeline."
+        keywords: ["assets", "asset-management", "raster-images", "fonts-as-assets", "logo-files", "asset-pipeline", "optimization", "tier-3", "implementation"]
 
   # =====================================================================
   # 40-59 — Server
@@ -1366,7 +1479,7 @@ books allocated, all with placeholder chapters:
 #### Band 20-39 — Client
 
 The client band is the most application-specific. ARC-100 allocates
-two generic books as a starting point:
+three books:
 
 - **Book 20 — Client Foundations.** Overview, module structure, build
   pipeline, state management, routing, error handling, accessibility.
@@ -1374,8 +1487,14 @@ two generic books as a starting point:
   channel, client-side auth surface, retry/error handling, response
   caching, optimistic updates. Consumes the API contract published in
   Book 42.
+- **Book 22 — Design.** The application's visual and experiential
+  design system, in three tiers: Foundations (the design language and
+  brand that govern every other chapter), Elements (typography, voice,
+  color, iconography, imagery, layout, motion, interactivity), and
+  Implementation (style/CSS, vectors, assets). Optional — applies to
+  any application with a user interface.
 
-The remaining 18 book slots are deliberately unallocated — they are
+The remaining 17 book slots are deliberately unallocated — they are
 where a project's application-specific UI surfaces (panels,
 visualizations, designers, component libraries, etc.) will land.
 
