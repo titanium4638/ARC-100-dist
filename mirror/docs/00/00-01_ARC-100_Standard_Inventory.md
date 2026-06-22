@@ -65,7 +65,7 @@ code listing; agents extract it by the marker pair.
 <!-- ARC-100-INDEX-START -->
 
 ```yaml
-arc_100_version: "100.2"
+arc_100_version: "100.3"
 active_version: null
 
 bands:
@@ -479,20 +479,6 @@ books:
         status: "placeholder"
         description: "Brand identity and personality expressed through design, carried consistently across every surface. Distinct from 02 Project Identity (mission, audience, value)."
         keywords: ["brand", "brand-identity", "personality", "positioning", "voice-and-character", "foundation", "tier-1", "logo", "wordmark"]
-      - id: "22-03"
-        arc_100: true
-        arc_100_ulid: 01KVRHKAN88ENYTVKM498H0Y3A
-        title: "Reserved (Tier-1 Foundation Headroom)"
-        status: "placeholder"
-        description: "Reserved. Held for a future cross-cutting design foundation that governs other chapters — not a bounded design facet."
-        keywords: ["reserved", "headroom", "tier-1", "foundation", "cross-cutting", "unallocated", "do-not-assign-facet"]
-      - id: "22-04"
-        arc_100: true
-        arc_100_ulid: 01KVRHKAP6MESXM8B94YGTGE3K
-        title: "Reserved (Tier-1 Foundation Headroom)"
-        status: "placeholder"
-        description: "Reserved (second slot). Held for a future cross-cutting design foundation that governs other chapters — not a bounded design facet."
-        keywords: ["reserved", "headroom", "tier-1", "foundation", "cross-cutting", "unallocated", "do-not-assign-facet"]
       - id: "22-05"
         arc_100: true
         arc_100_ulid: 01KVRHKAQ5P2MJMVF1QJXAFSPP
