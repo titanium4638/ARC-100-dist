@@ -51,7 +51,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Iterator
+from typing import Any, Iterator
 
 import yaml
 
@@ -1123,8 +1123,6 @@ def _empty_state() -> dict:
         "release_tag": "",
         "source_sha": "",
         "files": {},
-        "claude_target": "",
-        "claude_files": {},
         "index_snapshot": [],
         "diverged": {},
     }
@@ -1163,23 +1161,6 @@ def load_state(path: Path) -> tuple[dict | None, bool]:
     ):
         return _empty_state(), True
     state["files"] = files
-    # Claude file class (phase 5). Missing keys read as the default (a pre-phase-5
-    # state, or a bootstrap that predates this fix) — NOT a shape violation; a
-    # wrong-typed value still routes to lost-state, matching files/release_tag.
-    claude_target = raw.get("claude_target")
-    if claude_target is None:
-        claude_target = ""
-    if not isinstance(claude_target, str):
-        return _empty_state(), True
-    state["claude_target"] = claude_target
-    claude_files = raw.get("claude_files")
-    if claude_files is None:
-        claude_files = {}
-    if not isinstance(claude_files, dict) or not all(
-        isinstance(k, str) and isinstance(v, str) for k, v in claude_files.items()
-    ):
-        return _empty_state(), True
-    state["claude_files"] = claude_files
     snapshot = raw.get("index_snapshot")
     if snapshot is None:
         snapshot = []
@@ -1209,8 +1190,6 @@ def write_state(target: Path, state: dict, dry_run: bool) -> None:
         "source_sha": state.get("source_sha", ""),
         "synced_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "files": state.get("files", {}),
-        "claude_target": state.get("claude_target", ""),
-        "claude_files": state.get("claude_files", {}),
         "index_snapshot": state.get("index_snapshot", []),
         "diverged": state.get("diverged", {}),
     }
@@ -1261,67 +1240,24 @@ def walk_mirror_tree(source: Path) -> dict[str, Path]:
     }
 
 
-def render_tokens(text: str, project_name: str) -> str:
-    """Substitute the bounded ``<PROJECT>*`` placeholder set with the project's
-    name. Exact-string ``str.replace`` over an ordered, composite-first tuple —
-    NOT eval, regex, or ``str.format`` — so a hostile ``project_name`` (already
-    shape-gated to a single path segment at config load) has no injection or
-    unbounded-expansion surface. Composite tokens are replaced before the bare
-    ``<PROJECT>`` so no token rewrites another's output into a fresh match. The
-    list mirrors ``RUN_FIRST.sh``'s seed-token list — keep the two consistent."""
-    for old, new in (
-        ("<PROJECT> Project", project_name),
-        ("<PROJECT_DESC>", f"{project_name} documentation"),
-        ("<PROJECT_SLUG>", project_name),
-        ("<PROJECT>-100", project_name),
-        ("<PROJECT>", project_name),
-    ):
-        text = text.replace(old, new)
-    return text
-
-
-def _deliver(src: Path, rendered: bytes | None, tgt: Path) -> None:
-    """Write one payload file to ``tgt``. ``rendered is None`` (mirror class) →
-    ``shutil.copy2`` (byte-identical to the pre-claude-class behaviour, preserves
-    mode/mtime). ``rendered`` set (claude class) → ``write_bytes`` of the
-    already-substituted output."""
-    if rendered is None:
-        shutil.copy2(src, tgt)
-    else:
-        tgt.write_bytes(rendered)
-
-
 def sync_mirror_tree(
     target: Path,
     payload_files: dict[str, Path],
     old_files: dict[str, str],
     stamp: str,
     dry_run: bool,
-    renderer: Callable[[str], str] | None = None,
 ) -> tuple[dict[str, str], MirrorStats]:
     """One pass implementing the §6.5 seven-row table. With an empty
     old_files map this is also the (defensive) bootstrap copy: any
     pre-existing target file reads as locally-edited and is backed up
     before being overwritten. Returns (new files map, stats). The new
     files map contains exactly the payload's files — paths gone from
-    the payload drop out (rows 4-6).
-
-    When ``renderer`` is set (the claude file class), each payload file is
-    rendered through it and the RENDERED bytes are written and hashed, so drift
-    detection compares the on-disk substituted file against the stored
-    substituted-output hash. ``renderer is None`` (mirror class) is byte-identical
-    to the historical behaviour. The single ``target`` root is used for every
-    contained_path / _backup / removal call (the one-root-per-class invariant)."""
+    the payload drop out (rows 4-6)."""
     new_files: dict[str, str] = {}
     stats = MirrorStats()
     for rel in sorted(payload_files):
         src = payload_files[rel]
-        if renderer is None:
-            rendered: bytes | None = None
-            new_hash = sha256_file(src)
-        else:
-            rendered = renderer(src.read_text("utf-8")).encode("utf-8")
-            new_hash = hashlib.sha256(rendered).hexdigest()
+        new_hash = sha256_file(src)
         new_files[rel] = new_hash
         tgt = contained_path(target, rel)
         old_hash = old_files.get(rel)
@@ -1335,14 +1271,14 @@ def sync_mirror_tree(
                 stats.synced += 1
                 continue  # already current
             if disk_hash != new_hash and not dry_run:
-                _deliver(src, rendered, tgt)
+                shutil.copy2(src, tgt)
             stats.synced += 1
             if disk_hash == old_hash:
                 print(f"mirror: ^ {rel} (refreshed)")
         else:
             if not dry_run:
                 tgt.parent.mkdir(parents=True, exist_ok=True)
-                _deliver(src, rendered, tgt)
+                shutil.copy2(src, tgt)
             stats.synced += 1
             note = " (re-created; was deleted locally)" if rel in old_files else ""
             print(f"mirror: + {rel}{note}")
@@ -1848,9 +1784,7 @@ def run_bootstrap(
     target: Path,
     source: Path,
     config: Config,
-    mirror_files: dict[str, Path],
-    claude_files: dict[str, Path],
-    claude_target: Path,
+    payload_files: dict[str, Path],
     payload_md: str,
     payload_dict: dict,
     release_tag: str,
@@ -1869,19 +1803,13 @@ def run_bootstrap(
                 file=sys.stderr,
             )
             return 2
-    files_map, stats = sync_mirror_tree(target, mirror_files, {}, stamp, dry_run)
-    claude_map, claude_stats = sync_mirror_tree(
-        claude_target, claude_files, {}, stamp, dry_run,
-        renderer=lambda t: render_tokens(t, config.project_name),
-    )
+    files_map, stats = sync_mirror_tree(target, payload_files, {}, stamp, dry_run)
     seed_stats = seed_class(source, target, dry_run)
     applied = bootstrap_index(payload_md, payload_dict, config, target, stamp, dry_run)
     state = {
         "release_tag": release_tag,
         "source_sha": source_sha,
         "files": files_map,
-        "claude_files": claude_map,
-        "claude_target": str(claude_target),
         "index_snapshot": build_snapshot(payload_dict),
         "diverged": {},
     }
@@ -1890,7 +1818,6 @@ def run_bootstrap(
     print(
         f"summary: mode={mode}; files synced={stats.synced} "
         f"backed_up={stats.backed_up} removed={stats.removed} kept={stats.kept}; "
-        f"claude synced={claude_stats.synced} backed_up={claude_stats.backed_up}; "
         f"seeded {seed_stats.added} (skipped {seed_stats.skipped}); "
         f"index entries applied={applied} escalated=0"
     )
@@ -1901,9 +1828,7 @@ def run_refresh(
     target: Path,
     source: Path,
     config: Config,
-    mirror_files: dict[str, Path],
-    claude_files: dict[str, Path],
-    claude_target: Path,
+    payload_files: dict[str, Path],
     payload_dict: dict,
     state: dict,
     lost_state: bool,
@@ -1984,22 +1909,7 @@ def run_refresh(
 
     # --- Mirror file class (independent of the index batch; §6.5) ---
     files_map, stats = sync_mirror_tree(
-        target, mirror_files, dict(state.get("files") or {}), stamp, dry_run
-    )
-
-    # --- Claude file class (project-root --claude-target; rendered + drift on the
-    #     substituted output; one-root-per-class; backups under claude_target). A
-    #     changed --claude-target orphans the prior root's files — warn, continue. ---
-    prior_claude = state.get("claude_target")
-    if prior_claude is not None and prior_claude != str(claude_target):
-        print(
-            f"WARNING: --claude-target changed ({prior_claude} -> {claude_target}); "
-            "the prior root's .claude/ assets are not migrated and may be orphaned",
-            file=sys.stderr,
-        )
-    claude_map, claude_stats = sync_mirror_tree(
-        claude_target, claude_files, dict(state.get("claude_files") or {}),
-        stamp, dry_run, renderer=lambda t: render_tokens(t, config.project_name),
+        target, payload_files, dict(state.get("files") or {}), stamp, dry_run
     )
 
     # --- Seed file class (phase 2b; also independent of the index batch):
@@ -2018,8 +1928,6 @@ def run_refresh(
     state["release_tag"] = release_tag
     state["source_sha"] = source_sha
     state["files"] = files_map
-    state["claude_files"] = claude_map
-    state["claude_target"] = str(claude_target)
     state["diverged"] = diverged
 
     if result.escalations:
@@ -2034,7 +1942,6 @@ def run_refresh(
         print(
             f"summary: mode={mode}; files synced={stats.synced} "
             f"backed_up={stats.backed_up} removed={stats.removed} kept={stats.kept}; "
-            f"claude synced={claude_stats.synced} backed_up={claude_stats.backed_up}; "
             f"seeded {seed_stats.added} (skipped {seed_stats.skipped}); "
             f"index entries applied=0 escalated={len(result.escalations)}"
         )
@@ -2058,7 +1965,6 @@ def run_refresh(
     print(
         f"summary: mode={mode}; files synced={stats.synced} "
         f"backed_up={stats.backed_up} removed={stats.removed} kept={stats.kept}; "
-        f"claude synced={claude_stats.synced} backed_up={claude_stats.backed_up}; "
         f"seeded {seed_stats.added} (skipped {seed_stats.skipped}); "
         f"index entries applied={applied} escalated=0"
     )
@@ -2099,14 +2005,6 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         default="ARC-100-SYNC.config.yml",
         help="config path, resolved under --target",
     )
-    parser.add_argument(
-        "--claude-target",
-        type=Path,
-        default=None,
-        help="root for the .claude/ agents+commands+skills (default: --target). "
-        "Pass '.' to deliver them to the project root when the instance is a "
-        "subdirectory, so they work across the whole project.",
-    )
     return parser.parse_args(argv)
 
 
@@ -2116,20 +2014,10 @@ def main(argv: list[str] | None = None) -> int:
     target: Path = args.target
     source: Path = args.source
     dry_run: bool = args.dry_run
-    # The .claude/ assets (agents/commands/skills) deliver to the PROJECT ROOT —
-    # the parent of the instance when the instance is a subdirectory. Default to
-    # --target so the stock instance==root adopter is byte-identical to before.
-    claude_target: Path = args.claude_target if args.claude_target is not None else target
 
     try:
         if not target.is_dir():
             print(f"ERROR: --target is not a directory: {target}", file=sys.stderr)
-            return 2
-        if not claude_target.is_dir():
-            print(
-                f"ERROR: --claude-target is not a directory: {claude_target}",
-                file=sys.stderr,
-            )
             return 2
         config_path = contained_path(target, str(args.config))
         if not config_path.is_file():
@@ -2144,23 +2032,15 @@ def main(argv: list[str] | None = None) -> int:
         contained_path(target, config.local_index_path.as_posix())
 
         payload_files = walk_mirror_tree(source)
-        # Split the payload by file class: .claude/** delivers to --claude-target
-        # (rendered/substituted, project-root), everything else to --target.
-        claude_files = {
-            k: v for k, v in payload_files.items() if k.startswith(".claude/")
-        }
-        mirror_files = {
-            k: v for k, v in payload_files.items() if not k.startswith(".claude/")
-        }
-        index_rel = find_payload_index(mirror_files)
-        if config.local_index_path.as_posix() in mirror_files:
+        index_rel = find_payload_index(payload_files)
+        if config.local_index_path.as_posix() in payload_files:
             print(
                 "ERROR: local_index_path collides with a payload mirror path "
                 f"({config.local_index_path}) — fix the config",
                 file=sys.stderr,
             )
             return 2
-        payload_md = mirror_files[index_rel].read_text(encoding="utf-8")
+        payload_md = payload_files[index_rel].read_text(encoding="utf-8")
         payload_dict = extract_yaml(payload_md, UPSTREAM_START, UPSTREAM_END)
         release_tag, source_sha = read_release_meta(source)
 
@@ -2189,13 +2069,12 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             verify_ulid_coverage(payload_dict, side="payload", require_arc_100=False)
             code = run_bootstrap(
-                target, source, config, mirror_files, claude_files, claude_target,
-                payload_md, payload_dict, release_tag, source_sha, stamp, dry_run,
+                target, source, config, payload_files, payload_md, payload_dict,
+                release_tag, source_sha, stamp, dry_run,
             )
         else:
             code = run_refresh(
-                target, source, config, mirror_files, claude_files, claude_target,
-                payload_dict, state, lost,
+                target, source, config, payload_files, payload_dict, state, lost,
                 release_tag, source_sha, stamp, dry_run,
             )
         # Doctor (phase 2b): printed at the end of EVERY run, after the

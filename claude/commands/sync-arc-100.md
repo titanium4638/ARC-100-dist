@@ -7,9 +7,9 @@ description: Clone the upstream ARC-100 distribution and run arc_sync.py against
 
 > The ARC-100 docs instance lives in the `<PROJECT>-100/` subdirectory, while the
 > arc-100 `.claude/` agents and commands live in your project's **main** `.claude/`
-> (the project root). So the sync runs from the **project root**: `--target
-> <PROJECT>-100` points the tool at the docs instance, and `--claude-target .`
-> delivers the agents/commands to the project-root `.claude/`.
+> (the project root). So the sync runs from the **project root**: `arc_sync.py`
+> reconciles the docs into the instance, and `deploy_claude.py` deploys the
+> agents/commands to the project-root `.claude/`.
 
 Refresh the <PROJECT>-100 instance's inherited ARC-100 index entries by running the
 upstream-delivered sync tool, and surface any index decisions that need human
@@ -28,23 +28,29 @@ instance root** `<PROJECT>-100/`.)
 ## Run the sync
 
 The adopter runs **upstream-delivered code**: clone the public distribution
-mirror at depth 1, then run its `arc_sync.py` against the <PROJECT>-100 instance.
+mirror at depth 1, then run its two tools from the **project root** — `arc_sync.py`
+reconciles the docs into the `<PROJECT>-100/` instance, and `deploy_claude.py`
+re-deploys the arc-100 agents/commands to your project's **main** `.claude/`.
 
 ```bash
 CLONE="$(mktemp -d)"
 git clone --depth 1 https://github.com/arc-100-standard/ARC-100-dist.git "$CLONE"
-python3 "$CLONE/tools/arc_sync.py" --target <PROJECT>-100 --claude-target .
+python3 "$CLONE/tools/arc_sync.py" --target <PROJECT>-100            # docs -> the instance
+python3 "$CLONE/tools/deploy_claude.py" --src "$CLONE/claude" \
+        --project-root . --name <PROJECT>-100                        # .claude/ -> the project root
 rm -rf "$CLONE"
 ```
 
-`--target <PROJECT>-100` points the docs delivery at the instance subdirectory;
-`--claude-target .` delivers the arc-100 agents/commands to the **project-root**
-`.claude/` (not the instance silo), so they work across your whole project. The
-`<PROJECT>-100` here is your literal instance dir name — this command file is
-substituted at install. (A project whose whole repo *is* the instance runs
-`--target . --claude-target .` instead.) Do **not** pass `--source` — it defaults
-to the clone root, which is what an adopter wants. Add `--dry-run` to preview without writing anything; the
-dry run mirrors the exit code its real run would produce. Capture the exit code.
+`arc_sync.py --target <PROJECT>-100` reconciles the docs into the instance
+subdirectory (and is where index decisions can escalate — see the exit code
+below). `deploy_claude.py` then copies the generic `.claude/` agents/commands/
+skills to the project-root `.claude/`, substituting your project name — a fresh
+overwrite each sync (no local-edit backup, so tailor an agent via its "Project-
+specific extension" section, not the shipped body). The `<PROJECT>-100` is your
+literal instance dir name — this command file is substituted at install. (A
+project whose whole repo *is* the instance uses `--target .`.) Do **not** pass
+`--source` to `arc_sync.py` — it defaults to the clone root. Add `--dry-run` to
+`arc_sync.py` to preview the docs reconcile; capture its exit code.
 
 ## Read the exit code
 
@@ -77,7 +83,7 @@ escalating run and the run that applies it), and answered files archived under
 Once the sync lands cleanly, suggest the user commit — as one coherent commit —
 **everything the run touched, not just the index.** Run `git status <PROJECT>-100/
 .claude/` to capture the actual set (the instance subtree **and** the project-root
-`.claude/`, since `--claude-target .` refreshes the agents/commands there);
+`.claude/`, since `deploy_claude.py` re-deploys the agents/commands there);
 depending on what the run did it can include:
 
 - the working index `<PROJECT>-100/docs/01/01-01_<PROJECT>-100_Index.md` — only when this

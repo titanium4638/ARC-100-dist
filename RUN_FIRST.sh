@@ -134,12 +134,16 @@ with open(sys.argv[1], "w", encoding="utf-8") as fh:
     fh.write("\n")
 PY
 
-# Bootstrap: Book 00 -> <NAME>-100/docs/00/, working index seeded + correctly
-# named, ulid.py delivered into the instance. --target = the <NAME>-100/ docs
-# instance; --claude-target . delivers the arc-100 agents/commands/skills to the
-# PROJECT ROOT's .claude/ (not the instance silo), so they work across the whole
-# project. "$@" passes through (e.g. --source).
-python3 "${ARC_SYNC}" --source "${HERE}" --target "${name}" --claude-target . "$@"
+# Bootstrap the DOCS: Book 00 -> <NAME>-100/docs/00/, working index seeded +
+# correctly named, ulid.py into the instance. "$@" passes through (e.g. --source).
+python3 "${ARC_SYNC}" --source "${HERE}" --target "${name}" "$@"
+
+# Deploy the .claude/ agents/commands/skills to the PROJECT ROOT (this CWD, the
+# parent of <NAME>-100/), substituted for the system name — NOT the instance silo,
+# so they work across the whole project. deploy_claude.py sits beside arc_sync.py
+# in the payload (tools/) and reads the payload's claude/ dir (the effective SOURCE).
+DEPLOY_CLAUDE="$(dirname "${ARC_SYNC}")/deploy_claude.py"
+python3 "${DEPLOY_CLAUDE}" --src "${SOURCE}/claude" --project-root . --name "${name}"
 
 # Substitute the residual <PROJECT>* seed tokens in the just-seeded files, and
 # the <NAME> placeholder in the seeded working index, so the adopter never sees a
@@ -305,7 +309,7 @@ fi
 
 echo ""
 echo "Open this project root as your editor workspace — the arc-100 agents and the"
-echo "/sync-arc-100 command live in ./.claude/ (delivered there via --claude-target .)"
+echo "/sync-arc-100 command live in ./.claude/ (deployed there by RUN_FIRST)"
 echo "and work across your whole project; your docs live in ${name}/."
 echo ""
 echo "Updates are on demand — nothing syncs in the background. Pull upstream"
