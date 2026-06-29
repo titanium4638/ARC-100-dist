@@ -180,10 +180,12 @@ mechanical and subtle ones reviewable:
 | `mirror/docs/00/00-0X_*.md` | The Book 00 chapter bodies, delivered mirror-class (overwritten when upstream changes; a locally-edited copy is backed up first). |
 | `mirror/docs/00/00-01_ARC-100_Standard_Inventory.md` | The upstream ARC-100 index, delivered mirror-class as read-only reference; the project never renders from it (§00-05.5 / 00-00 §00-00.10.1). |
 | `mirror/_hooks/arc100_master_index.py` | mkdocs hook that generates the rendered index home page and prepends the critical-decisions banner (§00-05.6). |
-| `templates/agents/arc-100-librarian.md` | The ULID-aware chapter-discovery + index-curation agent, including the Resolution skill that fills in each queued decision (§00-05.6). Delivered **mirror-class** to `.claude/agents/` (so a re-sync refreshes it, with backup). |
-| `templates/agents/likec4-author.md` | The LikeC4 model-authoring agent (architecture model + embedded views; see 00-06). Delivered **mirror-class** to `.claude/agents/`. |
-| `templates/commands/sync-arc-100.md` | Slash command `/sync-arc-100` — clones the mirror, runs `arc_sync.py --target .`, surfaces the 0/1/2 exit code. Delivered **mirror-class** to `.claude/commands/`. |
-| `templates/commands/resolve-arc-100-issues.md` | Slash command `/resolve-arc-100-issues` — dispatches the librarian's Resolution skill to fill in the decision file's `decision:` cells; the *next* `arc_sync.py` run applies them. Delivered **mirror-class** to `.claude/commands/`. |
+| `templates/agents/arc-100-librarian.md` | The ULID-aware chapter-discovery + index-curation agent, including the Resolution skill that fills in each queued decision (§00-05.6) and a config-driven index resolution that keeps it from drifting from the master-index hook. Delivered **mirror-class** to the project's **main** `.claude/agents/` — the project root via `--claude-target`, **not** the `<PROJECT>-100/` instance — substituted for the local project name, so it works across the whole project (a re-sync refreshes it, with backup). |
+| `templates/agents/arc-100-chapter-author.md` | The chapter-body author: translates the project's existing documentation into one ARC-100 chapter at a time, verified against code/DB reality; never writes the index. Delivered **mirror-class** to the project's main `.claude/agents/` (project root), substituted. |
+| `templates/agents/likec4-author.md` | The LikeC4 model-authoring agent (architecture model + embedded views; see 00-06). Delivered **mirror-class** to the project's main `.claude/agents/` (project root). |
+| `templates/skills/arc-100-documentation-skill/SKILL.md` | The orchestrator skill that holds the migration loop — routes between the librarian (placement/index), chapter-author (bodies), and likec4-author (diagrams), with human gates for intent. Delivered **mirror-class** to the project's main `.claude/skills/` (project root), substituted. |
+| `templates/commands/sync-arc-100.md` | Slash command `/sync-arc-100` — clones the mirror, runs `arc_sync.py --target <PROJECT>-100 --claude-target .`, surfaces the 0/1/2 exit code. Delivered **mirror-class** to the project's main `.claude/commands/` (project root), substituted. |
+| `templates/commands/resolve-arc-100-issues.md` | Slash command `/resolve-arc-100-issues` — dispatches the librarian's Resolution skill to fill in the decision file's `decision:` cells; the *next* `arc_sync.py` run applies them. Delivered **mirror-class** to the project's main `.claude/commands/` (project root). |
 | `seed/ARC-100-SYNC.config.example.yml` | Annotated config template, delivered seed-class (copy-if-absent); a project copies it to `ARC-100-SYNC.config.yml` and sets `project_name` (§00-05.8). |
 | `seed/` (config, assets, placeholders) + `mirror/` (assets, fonts, the LikeC4 toolchain) | The distributed configuration standard and toolchain — site config and the standalone Architectural-Model page seeded copy-if-absent; home-page assets + Inter fonts + the hook delivered mirror-class (§00-05.8.1 / §00-05.8.2). |
 | `.arc100/` (per-project state, created by the tool) | Durable state at `.arc100/state.yml` (release pointers, synced-file hashes, the index `BASE` snapshot); the transient `.arc100/PENDING-INDEX-DECISIONS.yml`; dated `.arc100/backups/`; answered files archived under `.arc100/decisions-archive/`. Lives at the project root, outside any `docs_dir`. |
@@ -482,14 +484,18 @@ defaults to the clone root).
 expects:
 
 - `mirror/` — always-synced files; the path under `mirror/` **is** the
-  downstream target path (relpath-preserving, no remapping). This carries
-  the Book 00 chapter bodies (`mirror/docs/00/00-*.md`), the upstream
-  index (`mirror/docs/00/00-01_ARC-100_Standard_Inventory.md`), the
-  master-index hook (`mirror/_hooks/`), the home-page assets + fonts, the
-  ULID minter (`mirror/assets/arc100/tools/ulid.py`), and the four
-  ARC-100-owned `.claude/` agents + slash commands
-  (`mirror/.claude/agents/`, `mirror/.claude/commands/`) — all mirror-class,
-  so a re-sync refreshes them with backup.
+  downstream target path (relpath-preserving), with one exception noted
+  below. This carries the Book 00 chapter bodies (`mirror/docs/00/00-*.md`),
+  the upstream index (`mirror/docs/00/00-01_ARC-100_Standard_Inventory.md`),
+  the master-index hook (`mirror/_hooks/`), the home-page assets + fonts, and
+  the ULID minter (`mirror/assets/arc100/tools/ulid.py`). The six ARC-100-owned
+  `.claude/` assets (`mirror/.claude/agents/` — librarian, chapter-author,
+  likec4-author; `mirror/.claude/commands/` — sync-arc-100, resolve-arc-100-issues;
+  `mirror/.claude/skills/` — the documentation-skill) are also mirror-class, but
+  are the exception to relpath-preservation: they deliver to the project's **main**
+  `.claude/` (the project root via `--claude-target`, **not** the `<PROJECT>-100/`
+  instance) and are substituted for the local project name, so the agents/
+  commands/skill work across the whole project. A re-sync refreshes them with backup.
 - `seed/` — copy-if-absent files, stored under their **final target
   names**: the config example, the site-config template, the
   Architectural-Model page placeholder.
@@ -864,3 +870,4 @@ mirror, are delivered whole.
 | 2026-06-15 | Revision 14: repointed the distribution mirror from `titanium4638/ARC-100-dist` to **`arc-100-standard/ARC-100-dist`** (the dist repo was transferred into a new GitHub org so the published distribution is owned by a project-neutral name rather than a personal handle). Updated §00-05.8: the mirror name in prose, the `public mirror:` line in the distribution flow diagram, and the `git clone` command. The canonical source repo is unchanged. Prose/URL only; no section renumbered, all anchors preserved. |
 | 2026-06-16 | Revision 15: made the §00-05.8 clone idempotent + self-cleaning (`mktemp -d` for a unique throwaway dir, `rm -rf` after) — same fix as 00-07 §00-07.2. The fixed `${TMPDIR:-/tmp}/ARC-100-dist` path collided on re-run, breaking the re-clone-to-re-sync flow. Command-only; no section renumbered, anchors preserved. |
 | 2026-06-16 | Revision 16: dropped the literal example name from the §00-05.8 clone command (`bash "$CLONE/RUN_FIRST.sh"`, no argument — it prompts when none is given), so the command can't be copy-pasted into a system literally named "ACME". Command-only; no section renumbered, anchors preserved. |
+| 2026-06-28 | Revision 17: phase 5 — the migration toolkit is reclaimed into the distribution and the `.claude/` assets are **de-siloed**. §00-05.3.1 component table: the four `.claude/` rows now state delivery to the project's **main** `.claude/` (the project root via the new `arc_sync.py --claude-target`, **not** the `<PROJECT>-100/` instance), substituted for the local project name; **two new component rows** added — `templates/agents/arc-100-chapter-author.md` (chapter-body author) and `templates/skills/arc-100-documentation-skill/SKILL.md` (the migration-loop orchestrator) — both mirror-class to the project-root `.claude/`. §00-05.8 `mirror/` bullet: the six `.claude/` assets are named as the one exception to relpath-preservation (project-root delivery + substitution). Engine change behind this lives in `arc_sync.py` (a `render_tokens` substitution + a `renderer=None` generalization of `sync_mirror_tree` + the `--claude-target` second root) and `release.sh`/`RUN_FIRST.sh`. Prose-only here; no section renumbered, all anchors/citations preserved, no `00-01` change. See `versions/v2/implementation/phase_5.md`. |

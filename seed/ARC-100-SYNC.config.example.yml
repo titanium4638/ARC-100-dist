@@ -12,10 +12,10 @@
 # `project_name` when present, and falls back to `project_name` when absent
 # (so a greenfield install still renders a sensible heading). Free-form text;
 # write it as a double-quoted YAML scalar.
-# project_display_name: "Flow Render"
+# project_display_name: "Acme Render"
 
-# REQUIRED — the project's ARC-100 dialect name, e.g. FLOW-100, CS-100. It
-# drives the working-index conform markers (e.g. <!-- FLOW-100-INDEX-START -->)
+# REQUIRED — the project's ARC-100 dialect name, e.g. CS-100, ACME-100. It
+# drives the working-index conform markers (e.g. <!-- ACME-100-INDEX-START -->)
 # and the derived index filename (01-01_<project_name>_Index.md). Must be a
 # single path segment: letters, digits, and `._-` only — no `/`, no
 # whitespace, no leading dot (it fuses into a real filename). See chapter
@@ -42,7 +42,7 @@ project_name: <PROJECT>-100
 # 01-01, inside docs_dir). Set this only if your working index is not at the
 # conventional location.
 #   Derived default (when omitted): docs/01/01-01_<your project_name>_Index.md
-#   — e.g. for project_name FLOW-100, that is docs/01/01-01_FLOW-100_Index.md.
+#   — e.g. for project_name ACME-100, that is docs/01/01-01_ACME-100_Index.md.
 # local_index_path: docs/01/01-01_<PROJECT>-100_Index.md
 
 # OPTIONAL override — the chapter-tree root the master-index hook strips to

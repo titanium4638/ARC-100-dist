@@ -10,9 +10,9 @@ agent_summary: |
   Also covers where your own books/chapters go, the two Claude Code agents,
   removal, troubleshooting, and current limitations. Deliberately thin — it
   links the depth to 00-00 (numbering, bands, lifecycle, hard rules), 00-05 (the
-  sync model), and 00-06 (LikeC4) rather than restating them. Open your
-  <NAME>-100/ instance as your editor/Claude Code workspace so its bundled
-  /sync-arc-100 command and agents resolve.
+  sync model), and 00-06 (LikeC4) rather than restating them. Open your project
+  root as your editor/Claude Code workspace; the arc-100 agents and /sync-arc-100
+  install to the project's main .claude/ and work across the whole project.
 prerequisites: ["00-00_ARC-100_General.md"]
 companions: ["00-05_ARC-100_Synchronization.md", "00-06_ARC-100_Architectural_Modeling.md"]
 ---
@@ -34,21 +34,27 @@ companions: ["00-05_ARC-100_Synchronization.md", "00-06_ARC-100_Architectural_Mo
 Adopting ARC-100 means creating **your own named instance** — `CS-100`,
 `ACME-100`, `FLOW-100`. It *inherits* the Book 00 standard chapters (kept fresh
 by the sync) and *adds* your own books in the slots the standard reserves for
-you (§00-07.5). The onboarding script (§00-07.2) builds it as a self-contained
-folder, `<NAME>-100/`:
+you (§00-07.5). The onboarding script (§00-07.2) builds the `<NAME>-100/` docs
+instance under your project root, and installs the arc-100 agents/commands into
+your project's **main** `.claude/`:
 
 | Inside `<NAME>-100/` | What it is | Who maintains it |
 | --- | --- | --- |
 | `docs/00/` | Book 00 standard chapters + the mirrored ARC-100 index | Upstream — synced, read-only ([00-00 §00-00.11](00-00_ARC-100_General.md)) |
 | `docs/01/01-01_<NAME>-100_Index.md` | **Your working index** — the one your site renders from | The `arc-100-librarian` agent |
 | `docs/01/`, `docs/02/`, … | Your own books and chapters | You |
-| `.claude/`, `assets/`, `_hooks/`, `mkdocs.yml` | Agents + commands, theme assets, the build hook, site config | Synced (some seed-class — §00-07.3) |
+| `assets/`, `_hooks/`, `mkdocs.yml` | Theme assets, the build hook, site config | Synced (some seed-class — §00-07.3) |
 
-> **Open `<NAME>-100/` as your editor / Claude Code workspace.** It is a
-> complete project. Claude Code discovers slash commands and agents from the
-> *workspace root's* `.claude/`, so `/sync-arc-100` and the `arc-100-librarian` /
-> `likec4-author` agents are available only when the **instance** — not its
-> parent folder — is the open workspace.
+The arc-100 Claude Code agents/commands/skill do **not** live inside
+`<NAME>-100/` — they install to your project's main `.claude/` (the project root,
+delivered via `--claude-target .`).
+
+> **Open your project root as your editor / Claude Code workspace.** The arc-100
+> agents and commands live in your project's **main** `.claude/` (the project
+> root), so `/sync-arc-100` and the `arc-100-librarian` / `arc-100-chapter-author`
+> / `likec4-author` agents work across your whole project — not only when the
+> `<NAME>-100/` docs subfolder is the open workspace. The `<NAME>-100/` instance
+> holds your docs, index, and site config.
 
 ARC-100 keeps two indexes: the upstream inventory at `docs/00/00-01_…`
 (read-only) and *your* working index at `docs/01/01-01_…` — only the latter
@@ -148,9 +154,9 @@ nothing syncs in the background** (a sync can raise index decisions that need
 you, so it stays human-in-the-loop, not a daemon). Pull updates whenever you
 choose, two equivalent ways:
 
-- **`/sync-arc-100`** — the Claude Code slash command bundled in your instance
-  (`.claude/commands/`), available when `<NAME>-100/` is your open workspace
-  (§00-07.1).
+- **`/sync-arc-100`** — the Claude Code slash command installed in your project's
+  main `.claude/commands/`, available whenever your project root is the open
+  workspace (§00-07.1).
 - **The clone-and-run block** from §00-07.2, run again.
 
 Either re-clones the mirror and runs `arc_sync.py` against your instance; it
@@ -194,11 +200,11 @@ librarian loop (§00-07.6): place a doc as a chapter, author its body, re-sync.
 If a bootstrap lands a mirror-class file over a pre-existing one, the colliding
 copy is moved to `.arc100/backups/<stamp>/` first.
 
-### 00-07.6 — The two agents
+### 00-07.6 — The agents
 
-Your instance ships two Claude Code agents (in `.claude/agents/` — so open
-`<NAME>-100/` as your workspace, §00-07.1). You drive them by asking; they keep
-the disciplined rules so you don't have to.
+ARC-100 installs its Claude Code agents in your project's **main** `.claude/agents/`
+(§00-07.1), so they work across your whole project. You drive them by asking; they
+keep the disciplined rules so you don't have to.
 
 - **`arc-100-librarian`** — the only writer of your working index. Ask "where
   does X belong?" or "allocate the next chapter in band 40"; it does
@@ -214,21 +220,33 @@ the disciplined rules so you don't have to.
 `likec4-author`) write the body/diagrams → `mkdocs build` → `/sync-arc-100`
 keeps the inherited standard fresh.
 
+A **migration toolkit** also ships in your project's `.claude/` for translating
+existing project documentation into ARC-100 chapters: the
+`arc-100-documentation-skill` orchestrator routes the `arc-100-chapter-author`
+agent (writes chapter bodies, verified against code) and the librarian (placement
+and index) with human gates. Engage it when bringing legacy docs into your instance.
+
 ### 00-07.7 — Removing the synced ARC-100 footprint
 
 There is no `ARC-100-SYNC/` tree to delete — the onboarding script ran from
-a throwaway clone. To peel the synced ARC-100 footprint out of your instance
-while keeping your own books and chapters, run these **from inside your
-`<NAME>-100/` folder** (the paths are instance-relative):
+a throwaway clone. To peel the synced ARC-100 footprint out while keeping your
+own books and chapters, run the instance-relative removals **from inside your
+`<NAME>-100/` folder**, and the `.claude/` removal **from your project root**
+(that is where the arc-100 agents/commands install):
 
 ```bash
+# from inside <NAME>-100/ — the docs-instance footprint:
 rm -rf .arc100/                              # per-project sync state + backups
 rm ARC-100-SYNC.config.yml config.json       # the generated config + name asset
 rm docs/00/00-*.md                           # the synced Book 00 chapters + mirrored index
 rm _hooks/arc100_master_index.py             # the master-index hook
 rm -rf assets/arc100/                        # home-page assets + fonts + the ULID minter
-rm .claude/agents/arc-100-librarian.md .claude/agents/likec4-author.md \
-   .claude/commands/sync-arc-100.md .claude/commands/resolve-arc-100-issues.md   # if present
+
+# from your project root — the arc-100 .claude/ assets:
+rm .claude/agents/arc-100-librarian.md .claude/agents/arc-100-chapter-author.md \
+   .claude/agents/likec4-author.md \
+   .claude/commands/sync-arc-100.md .claude/commands/resolve-arc-100-issues.md \
+   .claude/skills/arc-100-documentation-skill/SKILL.md   # if present
 ```
 
 Then drop the hook line and the `arc100`/font references from `mkdocs.yml`.
@@ -325,3 +343,4 @@ the existing green `docs/` content into it is the dogfood activity that follows
 | 2026-06-16 | Revision 10: made the §00-07.2 clone idempotent + self-cleaning. The throwaway clone now goes into a fresh `mktemp -d` directory and is `rm -rf`'d after, instead of the fixed `${TMPDIR:-/tmp}/ARC-100-dist` path. The fixed path collided on re-run (`destination path … already exists and is not an empty directory`), which silently broke the re-clone-to-re-sync flow; the ephemeral dir is unique per run, auto-discarded, and never clutters the adopter's tree. Added a one-line note explaining the `mktemp`/`rm -rf` pattern. Command + note only; no section renumbered. |
 | 2026-06-16 | Revision 11: dropped the literal name from the §00-07.2 clone command (`bash "$CLONE/RUN_FIRST.sh"`, no argument — it prompts when none is given), so it can't be copy-pasted into a documentation system literally named "ACME"; the placeholder wasn't obviously a placeholder. (`RUN_FIRST.sh` still *accepts* an optional positional name for automation/tests/the dogfood runbook — the docs just never show it.) Also clarified §00-07.4 "Keeping current": `/sync-arc-100` is a Claude Code slash command (not a filesystem path; at `.claude/commands/sync-arc-100.md`), and updating is **on-demand** — there is no background/daemon sync (human-in-the-loop by design, since a sync can raise index decisions). Command + prose only; no section renumbered. |
 | 2026-06-16 | Revision 12: major simplification (author direction) + the workspace fix. Cut §00-07.1's rehash of *what ARC-100 is* (→ a tight instance-orientation table + a link to 00-00) and the §00-07.2–.6 restatements of the 00-05 sync model and 00-00 numbering (→ links), while keeping every action and genuine complexity (clone, exit codes, the index-decision escalation flow, the slot/book allocation rules, current limitations). **Fixed the `/sync-arc-100` doc gap:** §00-07.1 (new note), §00-07.4, and §00-07.6 now state that the `<NAME>-100/` instance *is* your editor/Claude Code workspace — Claude Code discovers `.claude/` commands and agents from the workspace root, so `/sync-arc-100` and the agents resolve only when the instance (not its parent) is the open workspace; `RUN_FIRST.sh`'s closing message says the same. Retitled §00-07.1 → "Your `<NAME>-100` instance", §00-07.3 → "After the bootstrap: deps and a first preview", §00-07.4 → "Keeping current"; trimmed §00-07.11's verbose file-tree. Title-only changes; no section number moved, all `[BB-CC §N]` citations intact. A 3-lens adversarial pass (complexity-preservation / rehash / links) confirmed no real action or complexity was lost; its fixes are folded in — restored the version-closeout bulk-migration constraint (§00-07.5, [00-00 §00-00.10](00-00_ARC-100_General.md)), scoped the `1` exit code to the re-sync path (the first run only bootstraps → `0`/`2`), and dropped the non-actionable banner-rendering troubleshooting bullet (the hook is mirror-class; that note belongs to 00-05.6). |
+| 2026-06-28 | Revision 13: phase 5 — **de-silo correction** (reverses Revision 12's workspace claim). The arc-100 Claude Code agents/commands/skill are now delivered to the project's **main** `.claude/` (the project root, via `arc_sync.py --claude-target .`), NOT the `<NAME>-100/` instance silo — so they resolve when your **project root** is the open workspace and work across the whole project (the prior "open `<NAME>-100/` as your workspace" guidance made them useless while coding elsewhere in the project). Edits: the frontmatter `agent_summary`; §00-07.1 NOTE + the "Inside `<NAME>-100/`" table (dropped the `.claude/` row, added a project-root note); §00-07.4 `/sync-arc-100` location; §00-07.6 retitled "The two agents" → "The agents", de-siloed, + a migration-toolkit note (the new `arc-100-chapter-author` + `arc-100-documentation-skill`); §00-07.7 removal split into instance-relative (from `<NAME>-100/`) vs project-root `.claude/` removals, with the two new assets added. Prose-only; only the §00-07.6 title text changed (no section number moved, no `[BB-CC §N]` citation moved), no `00-01` change. See `versions/v2/implementation/phase_5.md` (D6). |

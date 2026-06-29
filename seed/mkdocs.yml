@@ -1,4 +1,4 @@
-# <PROJECT> is your project moniker (e.g. FLOW). Replace it below — the three
+# <PROJECT> is your project moniker (e.g. ACME). Replace it below — the three
 # name fields are the only project-specific lines here.
 #
 # A synced project has exactly ONE mkdocs.yml rendering ONE site, whose index

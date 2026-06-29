@@ -135,8 +135,11 @@ with open(sys.argv[1], "w", encoding="utf-8") as fh:
 PY
 
 # Bootstrap: Book 00 -> <NAME>-100/docs/00/, working index seeded + correctly
-# named, .claude/ + ulid.py delivered. "$@" passes through (e.g. --source).
-python3 "${ARC_SYNC}" --source "${HERE}" --target "${name}" "$@"
+# named, ulid.py delivered into the instance. --target = the <NAME>-100/ docs
+# instance; --claude-target . delivers the arc-100 agents/commands/skills to the
+# PROJECT ROOT's .claude/ (not the instance silo), so they work across the whole
+# project. "$@" passes through (e.g. --source).
+python3 "${ARC_SYNC}" --source "${HERE}" --target "${name}" --claude-target . "$@"
 
 # Substitute the residual <PROJECT>* seed tokens in the just-seeded files, and
 # the <NAME> placeholder in the seeded working index, so the adopter never sees a
@@ -301,8 +304,9 @@ else
 fi
 
 echo ""
-echo "Open ${name}/ as your editor workspace — that is where /sync-arc-100 and the"
-echo "arc-100-librarian / likec4-author agents live (in ${name}/.claude/)."
+echo "Open this project root as your editor workspace — the arc-100 agents and the"
+echo "/sync-arc-100 command live in ./.claude/ (delivered there via --claude-target .)"
+echo "and work across your whole project; your docs live in ${name}/."
 echo ""
 echo "Updates are on demand — nothing syncs in the background. Pull upstream"
 echo "changes anytime by re-running the clone-and-run, or /sync-arc-100 in Claude Code."
